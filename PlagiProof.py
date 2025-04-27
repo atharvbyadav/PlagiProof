@@ -6,6 +6,8 @@ import nltk
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import PyPDF2
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 # Download NLTK data (only once)
 nltk.download('punkt')
@@ -82,6 +84,35 @@ def read_pdf(file_path):
             pdf_text += page.extract_text()
     return pdf_text
 
+# Function to generate PDF report
+def generate_pdf_report(report, output_filename):
+    c = canvas.Canvas(output_filename, pagesize=letter)
+    width, height = letter
+    
+    c.setFont("Helvetica", 12)
+    y_position = height - 40
+    c.drawString(40, y_position, "Plagiarism Check Report")
+    y_position -= 20
+    
+    for item in report:
+        c.drawString(40, y_position, f"Sentence: {item['sentence'][:100]}...")  # Display first 100 characters
+        y_position -= 15
+        c.drawString(40, y_position, f"Similarity: {item['similarity']*100:.2f}%")
+        y_position -= 15
+        
+        if item['similarity'] >= 0.7:
+            c.drawString(40, y_position, "⚠️ Possible Plagiarism Detected!")
+        else:
+            c.drawString(40, y_position, "✅ Looks Original.")
+        y_position -= 20
+
+        if y_position < 50:  # New page if space is running out
+            c.showPage()
+            c.setFont("Helvetica", 12)
+            y_position = height - 40
+
+    c.save()
+
 # --------------------
 # MAIN MENU
 # --------------------
@@ -130,11 +161,8 @@ if __name__ == "__main__":
     # Now run plagiarism check
     report = check_plagiarism(full_text)
 
-    print("\n--- PLAGIARISM REPORT ---")
-    for item in report:
-        print(f"Sentence: {item['sentence']}")
-        print(f"Similarity: {item['similarity']*100:.2f}%")
-        if item['similarity'] >= 0.7:
-            print("⚠️ Possible Plagiarism Detected!\n")
-        else:
-            print("✅ Looks Original.\n")
+    # Generate and save PDF report
+    pdf_filename = input("\nEnter the desired filename for the PDF report (e.g., report.pdf): ")
+    generate_pdf_report(report, pdf_filename)
+
+    print(f"\nPDF report saved as {pdf_filename}.")

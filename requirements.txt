@@ -3,3 +3,4 @@ beautifulsoup4
 nltk
 scikit-learn
 PyPDF2
+reportlab
