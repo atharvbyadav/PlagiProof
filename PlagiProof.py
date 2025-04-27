@@ -53,6 +53,7 @@ def check_plagiarism(input_text):
         try:
             search_results = search_bing_free(sentence)
             snippets = [res['snippet'] for res in search_results if res['snippet']]
+            links = [res['link'] for res in search_results if res['snippet']]
             
             if snippets:
                 similarity = calculate_similarity(sentence, snippets)
@@ -61,7 +62,9 @@ def check_plagiarism(input_text):
             
             plagiarism_report.append({
                 'sentence': sentence,
-                'similarity': similarity
+                'similarity': similarity,
+                'snippets': snippets,
+                'links': links
             })
 
             time.sleep(2)  # polite delay
@@ -70,7 +73,9 @@ def check_plagiarism(input_text):
             print(f"Error checking sentence: {e}")
             plagiarism_report.append({
                 'sentence': sentence,
-                'similarity': 0.0
+                'similarity': 0.0,
+                'snippets': [],
+                'links': []
             })
 
     return plagiarism_report
@@ -94,19 +99,38 @@ def generate_pdf_report(report, output_filename):
     c.drawString(40, y_position, "Plagiarism Check Report")
     y_position -= 20
     
+    # Loop through the report to format it nicely in PDF
     for item in report:
-        c.drawString(40, y_position, f"Sentence: {item['sentence'][:100]}...")  # Display first 100 characters
+        c.setFont("Helvetica", 10)
+        
+        # Add Sentence
+        c.drawString(40, y_position, f"Sentence: {item['sentence'][:100]}...")  # Limit to 100 characters
         y_position -= 15
+        
+        # Add Similarity Score
         c.drawString(40, y_position, f"Similarity: {item['similarity']*100:.2f}%")
         y_position -= 15
         
+        # Add Links and Snippets
         if item['similarity'] >= 0.7:
             c.drawString(40, y_position, "⚠️ Possible Plagiarism Detected!")
+            y_position -= 15
+            c.drawString(40, y_position, "Sources:")
+            y_position -= 15
+            for i, link in enumerate(item['links']):
+                c.drawString(40, y_position, f"{i+1}. {link}")
+                y_position -= 15
         else:
             c.drawString(40, y_position, "✅ Looks Original.")
-        y_position -= 20
+            y_position -= 15
 
-        if y_position < 50:  # New page if space is running out
+        # Add snippets
+        for snippet in item['snippets']:
+            c.drawString(40, y_position, f"Snippet: {snippet[:100]}...")  # Limit to 100 characters
+            y_position -= 15
+
+        # New page if space is running out
+        if y_position < 50:
             c.showPage()
             c.setFont("Helvetica", 12)
             y_position = height - 40
