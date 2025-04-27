@@ -22,3 +22,12 @@ def search_bing_free(query):
         results.append({"title": title, "link": link, "snippet": snippet})
     
     return results
+
+# Example usage:
+query = "Artificial intelligence is the simulation of human intelligence processes by machines."
+results = search_bing_free(query)
+
+for result in results:
+    print(f"Title: {result['title']}")
+    print(f"URL: {result['link']}")
+    print(f"Snippet: {result['snippet']}\n")
