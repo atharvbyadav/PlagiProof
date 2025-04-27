@@ -5,6 +5,7 @@ import time
 import nltk
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import PyPDF2
 
 # Download NLTK data (only once)
 nltk.download('punkt')
@@ -40,7 +41,7 @@ def calculate_similarity(input_sentence, snippets):
     highest_similarity = cosine_sim.max()
     return highest_similarity
 
-# Main plagiarism checking function
+# Function to check plagiarism
 def check_plagiarism(input_text):
     sentences = nltk.sent_tokenize(input_text)
     plagiarism_report = []
@@ -61,7 +62,7 @@ def check_plagiarism(input_text):
                 'similarity': similarity
             })
 
-            time.sleep(2)  # polite delay to avoid being blocked
+            time.sleep(2)  # polite delay
 
         except Exception as e:
             print(f"Error checking sentence: {e}")
@@ -72,21 +73,68 @@ def check_plagiarism(input_text):
 
     return plagiarism_report
 
+# Function to read a PDF file
+def read_pdf(file_path):
+    pdf_text = ""
+    with open(file_path, 'rb') as file:
+        pdf_reader = PyPDF2.PdfReader(file)
+        for page in pdf_reader.pages:
+            pdf_text += page.extract_text()
+    return pdf_text
+
 # --------------------
-# Example usage
+# MAIN MENU
 # --------------------
+if __name__ == "__main__":
+    print("\n💬 Welcome to the Plagiarism Checker!\n")
+    print("Select input method:")
+    print("1️⃣  Type/Paste Text")
+    print("2️⃣  Upload .txt file")
+    print("3️⃣  Upload .pdf file\n")
 
-input_text = """
-Artificial intelligence is the simulation of human intelligence processes by machines. It is widely used in fields such as healthcare, finance, and transportation. Climate change is the long-term alteration of temperature and typical weather patterns in a place.
-"""
+    choice = input("Enter your choice (1/2/3): ")
 
-report = check_plagiarism(input_text)
+    full_text = ""
 
-print("\n--- PLAGIARISM REPORT ---")
-for item in report:
-    print(f"Sentence: {item['sentence']}")
-    print(f"Similarity: {item['similarity']*100:.2f}%")
-    if item['similarity'] >= 0.7:  # 70%+ similar is considered plagiarized
-        print("⚠️ Possible Plagiarism Detected!\n")
+    if choice == "1":
+        print("\nEnter the text you want to check (press Enter twice when done):\n")
+        user_input = []
+        while True:
+            line = input()
+            if line == "":
+                break
+            user_input.append(line)
+        full_text = "\n".join(user_input)
+
+    elif choice == "2":
+        filename = input("\nEnter the path to your .txt file: ")
+        try:
+            with open(filename, 'r', encoding='utf-8') as file:
+                full_text = file.read()
+        except Exception as e:
+            print(f"Error reading file: {e}")
+            exit()
+
+    elif choice == "3":
+        filename = input("\nEnter the path to your .pdf file: ")
+        try:
+            full_text = read_pdf(filename)
+        except Exception as e:
+            print(f"Error reading PDF: {e}")
+            exit()
+
     else:
-        print("✅ Looks Original.\n")
+        print("❌ Invalid choice. Exiting.")
+        exit()
+
+    # Now run plagiarism check
+    report = check_plagiarism(full_text)
+
+    print("\n--- PLAGIARISM REPORT ---")
+    for item in report:
+        print(f"Sentence: {item['sentence']}")
+        print(f"Similarity: {item['similarity']*100:.2f}%")
+        if item['similarity'] >= 0.7:
+            print("⚠️ Possible Plagiarism Detected!\n")
+        else:
+            print("✅ Looks Original.\n")
